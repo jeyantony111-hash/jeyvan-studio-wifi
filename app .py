@@ -1,136 +1,117 @@
-from flask import Flask, request, jsonify, render_template_string
-import random, string, datetime, json, os
+from flask import Flask, request, render_template_string, redirect
+import datetime
 
 app = Flask(__name__)
 
-# Hifadhi ya vocha - itatengenezwa yenyewe
-VOUCHERS_FILE = "vouchers.json"
-VOUCHERS = {}
-
-# Pakia vocha zilizopo
-if os.path.exists(VOUCHERS_FILE):
-    try:
-        with open(VOUCHERS_FILE, 'r') as f:
-            VOUCHERS = json.load(f)
-    except:
-        VOUCHERS = {}
-
-def save_vouchers():
-    with open(VOUCHERS_FILE, 'w') as f:
-        json.dump(VOUCHERS, f)
-
-def generate_code():
-    return "JV-" + ''.join(random.choices(string.digits, k=4)) + "-" + ''.join(random.choices(string.digits, k=4))
-
-# Page ya malipo - mteja akitoka hotspot yako
-PAYMENT_PAGE = """
+HTML = """
 <!DOCTYPE html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Lipa JEYVAN WIFI</title>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JEYVAN STUDIO - WIFI MBULU</title>
 <style>
-body{background:#0f0f0f;color:white;font-family:Arial;padding:20px;text-align:center}
-.card{background:#1a1a2e;border-radius:20px;padding:25px;max-width:400px;margin:20px auto;border:2px solid #ff9f00}
-h1{color:#ff9f00} .price{font-size:40px;color:#00ff88;font-weight:900;margin:15px 0}
-button{width:100%;padding:16px;background:#ff9f00;border:none;border-radius:12px;font-weight:900;font-size:18px;margin-top:15px;cursor:pointer}
-.info{background:#222;padding:12px;border-radius:10px;margin:15px 0;font-size:13px;text-align:left}
-input{width:100%;padding:12px;border-radius:10px;border:1px solid #333;background:#0f0f0f;color:white;margin:8px 0}
-</style></head><body>
+body{font-family:Arial;background:linear-gradient(135deg,#0f172a,#1e3a8a);color:white;margin:0;padding:20px;min-height:100vh}
+.container{max-width:400px;margin:auto;background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);border-radius:20px;padding:25px;box-shadow:0 10px 30px rgba(0,0,0,0.3)}
+h1{text-align:center;color:#facc15;margin-bottom:5px}
+.sub{text-align:center;opacity:0.8;margin-bottom:20px}
+.card{background:white;color:#0f172a;border-radius:15px;padding:15px;margin:12px 0;display:flex;justify-content:space-between;align-items:center;transition:0.3s}
+.card:hover{transform:scale(1.02)}
+.price{font-weight:bold;font-size:18px}
+.time{font-size:13px;opacity:0.7}
+.btn{background:#facc15;color:#0f172a;border:none;padding:10px 18px;border-radius:10px;font-weight:bold;cursor:pointer}
+.btn:hover{background:#fde047}
+.lipa{background:#00a651;color:white;text-align:center;padding:12px;border-radius:12px;margin-top:20px;font-weight:bold}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>JEYVAN STUDIO</h1>
+<div class="sub">WIFI YA KASI MBULU - Karibu Mteja!</div>
+
 <div class="card">
-<h1>JEYVAN PREMIUM WIFI</h1>
-<p>Unaenda kununua kifurushi:</p>
-<div class="price">{{bei}} TSH</div>
-<p>Masaa: {{masaa}} | Airtel Lipa: 13984763</p>
-<div class="info">
-<b>Jinsi ya kulipa:</b><br>
-1. Ingiza namba yako ya Airtel Money<br>
-2. Bonyeza LIPA SASA<br>
-3. Thibitisha kwenye simu yako *150*60#<br>
-4. Utapata CODE ya kuingia WiFi hapa!
+<div><div class="price">TZS 500</div><div class="time">Masaa 7 - Browsing</div></div>
+<a href="/lipa?amount=500"><button class="btn">Nunua</button></a>
 </div>
-<form method="POST" action="/lipa">
-<input type="hidden" name="bei" value="{{bei}}">
-<input type="hidden" name="masaa" value="{{masaa}}">
-<input name="phone" placeholder="Namba yako Airtel - 068xxxxxxx" required>
-<button type="submit">LIPA SASA {{bei}} TSH →</button>
-</form>
-<p style="margin-top:15px;font-size:11px;color:#777">Mfumo wa majaribio - Kwa sasa utapewa CODE mara moja baada ya kubonyeza</p>
-</div></body></html>
+
+<div class="card">
+<div><div class="price">TZS 1,000</div><div class="time">Masaa 24 - Siku 1</div></div>
+<a href="/lipa?amount=1000"><button class="btn">Nunua</button></a>
+</div>
+
+<div class="card">
+<div><div class="price">TZS 5,000</div><div class="time">Wiki 1 - Unlimited</div></div>
+<a href="/lipa?amount=5000"><button class="btn">Nunua</button></a>
+</div>
+
+<div class="card">
+<div><div class="price">TZS 15,000</div><div class="time">Mwezi 1 - Family</div></div>
+<a href="/lipa?amount=15000"><button class="btn">Nunua</button></a>
+</div>
+
+<div class="lipa">
+Airtel Lipa Namba: 13984763<br>
+Jina: JEYVAN STUDIO<br>
+Lipa kisha weka Code ya Muamala
+</div>
+
+</div>
+</body>
+</html>
 """
 
-SUCCESS_PAGE = """
-<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Vocha Yako</title>
-<style>body{background:#0f0f0f;color:white;font-family:Arial;padding:20px;text-align:center}
-.card{background:#1a1a2e;border-radius:20px;padding:25px;max-width:400px;margin:20px auto;border:2px solid #00ff88}
-.code{font-size:32px;background:#000;padding:15px;border-radius:12px;letter-spacing:3px;color:#00ff88;font-weight:900;margin:15px 0;border:2px dashed #00ff88}
-button{width:100%;padding:14px;background:#00ff88;border:none;border-radius:10px;font-weight:900;margin-top:10px}</style></head><body>
-<div class="card">
-<h1 style="color:#00ff88">✓ MALIPO YAMEPOKELEWA!</h1>
-<p>Vocha yako ya {{masaa}} Masaa:</p>
-<div class="code">{{code}}</div>
-<p>Bei: {{bei}} TSH | Muda: {{masaa}}H</p>
-<p style="font-size:13px;color:#aaa">Nakili hii CODE na weka kwenye page ya JEYVAN WIFI pale chini "Weka CODE yako hapa"</p>
-<button onclick="copyCode()">NAKILI CODE</button>
-<button onclick="window.location.href='http://login.hotspot.co.tz'" style="background:#ff9f00">RUDI KUINGIA WIFI →</button>
+LIPA_PAGE = """
+<!DOCTYPE html>
+<html><head><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<style>body{font-family:Arial;background:#0f172a;color:white;padding:20px;text-align:center}
+.box{max-width:400px;margin:auto;background:white;color:#0f172a;padding:25px;border-radius:20px}
+input{width:90%;padding:12px;margin:10px 0;border-radius:10px;border:1px solid #ccc}
+.btn{background:#00a651;color:white;padding:12px 25px;border:none;border-radius:10px;font-weight:bold;width:100%}</style>
+</head><body>
+<div class="box">
+<h2>Lipa TZS {{amount}} - JEYVAN</h2>
+<p>1. Piga *150*60# Airtel<br>2. Chagua Lipa Namba<br>3. Weka: <b>13984763</b><br>4. Weka Kiasi: <b>{{amount}}</b></p>
+<form action="/verify" method="post">
+<input type="hidden" name="amount" value="{{amount}}">
+<input type="text" name="code" placeholder="Weka Code ya Muamala hapa (mf: CI...)" required>
+<button class="btn">THIBITISHA MALIPO</button>
+</form>
+<p style="font-size:12px;opacity:0.7">Baada ya kuthibitisha utaunganishwa moja kwa moja</p>
 </div>
-<script>function copyCode(){navigator.clipboard.writeText("{{code}}");alert("CODE Imenakiliwa: {{code}}")}</script>
 </body></html>
 """
 
 @app.route('/')
 def home():
-    bei = request.args.get('bei', '500')
-    masaa = request.args.get('masaa', '7')
-    return render_template_string(PAYMENT_PAGE, bei=bei, masaa=masaa)
+    return render_template_string(HTML)
 
-@app.route('/lipa', methods=['GET','POST'])
+@app.route('/lipa')
 def lipa():
-    if request.method == 'GET':
-        bei = request.args.get('bei', '500')
-        masaa = request.args.get('masaa', '7')
-        return render_template_string(PAYMENT_PAGE, bei=bei, masaa=masaa)
-    
-    bei = request.form.get('bei', '500')
-    masaa = request.form.get('masaa', '7')
-    phone = request.form.get('phone', '')
-    
-    code = generate_code()
-    now = datetime.datetime.now()
-    
-    VOUCHERS[code] = {
-        "code": code,
-        "bei": bei,
-        "masaa": masaa,
-        "phone": phone,
-        "created": now.strftime("%Y-%m-%d %H:%M:%S"),
-        "used": False
-    }
-    save_vouchers()
-    
-    # HAPA NDIPO AZAMPAY ITAUNGANISHWA BAADAYE
-    # Kwa sasa tunatengeneza code mara moja kwa majaribio
-    
-    return render_template_string(SUCCESS_PAGE, code=code, bei=bei, masaa=masaa)
+    amount = request.args.get('amount','500')
+    return render_template_string(LIPA_PAGE, amount=amount)
 
-@app.route('/api/vouchers')
-def list_vouchers():
-    return jsonify(VOUCHERS)
-
-@app.route('/api/validate/<code>')
-def validate(code):
-    v = VOUCHERS.get(code)
-    if not v:
-        return jsonify({"valid": False, "msg": "CODE SI SAHIHI"})
-    if v.get("used"):
-        return jsonify({"valid": False, "msg": "CODE IMESHATUMIKA"})
-    return jsonify({"valid": True, "masaa": v["masaa"], "bei": v["bei"]})
-
-# Hii ndiyo AzamPay itaita baada ya malipo ya Airtel Lipa 13984763
-@app.route('/callback/azampay', methods=['POST'])
-def azam_callback():
-    data = request.json
-    # Hapa ndipo tutathibitisha malipo ya kweli
-    return jsonify({"status": "ok"})
+@app.route('/verify', methods=['POST'])
+def verify():
+    code = request.form.get('code')
+    amount = request.form.get('amount')
+    # Hapa ndipo tunaruhusu mtumiaji aingie - Kwa sasa tunakubali code yoyote
+    # Baadaye tutaunganisha na API ya Airtel
+    return f"""
+    <html><head><meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <style>body{{background:#0f172a;color:white;text-align:center;padding:40px;font-family:Arial}}
+    .ok{{background:#00a651;padding:20px;border-radius:20px;max-width:400px;margin:auto}}
+    </style></head><body>
+    <div class="ok">
+    <h1>✅ MALIPO YAMEPOKELEWA!</h1>
+    <p>Kiasi: TZS {amount}</p>
+    <p>Code: {code}</p>
+    <p>Umeunganishwa kwenye JEYVAN STUDIO WIFI!</p>
+    <p>Enjoy - Muda wako umeanza kuhesabiwa.</p>
+    <hr>
+    <p style="font-size:12px">Mteja atapata internet moja kwa moja. Password ya WiFi itaonekana hapa.</p>
+    </div>
+    </body></html>
+    """
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=10000)
