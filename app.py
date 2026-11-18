@@ -1,36 +1,31 @@
 from flask import Flask, request, render_template_string
 import os, random, string, requests, uuid
 from datetime import datetime, timedelta
-import calendar
 
 app = Flask(__name__)
 
 ZENOPAY_API_KEY = os.getenv("ZENOPAY_API_KEY")
 ZENOPAY_ACCOUNT_ID = os.getenv("ZENOPAY_ACCOUNT_ID", "zp31356735")
 
-# ===== VOCHA ZA KALENDA TU - HAKUNA MASAA =====
+# ===== KILA MTEJA ANA MUDA WAKE - KUANZIA ALIPONUNUA =====
 def tarehe_mwisho(kifurushi):
     leo = datetime.now()
-    if kifurushi == "LEO":
-        return leo.replace(hour=23, minute=59, second=59)
+    if kifurushi == "MASAA7":
+        return leo + timedelta(hours=7)
     if kifurushi == "SIKU 1":
-        kesho = leo + timedelta(days=1)
-        return kesho.replace(hour=23, minute=59, second=59)
+        return leo + timedelta(hours=24)
     if kifurushi == "WIKI HII":
-        siku_zilizobaki = 6 - leo.weekday() # Jumapili=6
-        jumapili = leo + timedelta(days=siku_zilizobaki)
-        return jumapili.replace(hour=23, minute=59, second=59)
+        return leo + timedelta(days=7)
     if kifurushi == "MWEZI HUU":
-        siku_za_mwezi = calendar.monthrange(leo.year, leo.month)[1]
-        return leo.replace(day=siku_za_mwezi, hour=23, minute=59, second=59)
+        return leo + timedelta(days=30)
     return leo
 
 VOCHA = {
-    "JEYVAN123": {"kifurushi": "LEO", "mwisho": None},
+    "JEYVAN123": {"kifurushi": "MASAA7", "mwisho": None},
     "JEYVAN456": {"kifurushi": "SIKU 1", "mwisho": None},
     "JEYVAN789": {"kifurushi": "WIKI HII", "mwisho": None},
 }
-BEI = {"500": "LEO", "1000": "SIKU 1", "5000": "WIKI HII", "15000": "MWEZI HUU"}
+BEI = {"500": "MASAA7", "1000": "SIKU 1", "5000": "WIKI HII", "15000": "MWEZI HUU"}
 MALIPO_YANAYOSUBIRI = {}
 
 def tengeneza_code():
@@ -45,8 +40,9 @@ def angalia_vocha(code):
     if mwisho is None:
         mwisho = tarehe_mwisho(kifurushi)
     if datetime.now() > mwisho:
-        return False, f"❌ Code {code} IMESHAISHA! Ilikuwa ya {kifurushi}, iliisha {mwisho.strftime('%d/%m/%Y saa 11:59')}. Nunua nyingine."
-    return True, f"✅ Karibu! Code {code} ni sahihi - {kifurushi}. Inaisha: {mwisho.strftime('%d/%m/%Y saa 11:59 usiku')}"
+        return False, f"❌ Code {code} IMESHAISHA! Nunua nyingine."
+    jina_nje = {"MASAA7": "SAA 7", "SIKU 1": "SIKU 1", "WIKI HII": "WIKI", "MWEZI HUU": "MWEZI"}.get(kifurushi, kifurushi)
+    return True, f"✅ Karibu! Code {code} ni sahihi - {jina_nje} - Data bila kikomo."
 
 HTML = """
 <!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1">
@@ -74,23 +70,22 @@ button{width:95%;padding:14px;border:none;border-radius:12px;background:linear-g
 .pending{background:#FF8C00;color:#000;padding:15px;border-radius:12px;font-weight:bold;margin:10px 0}
 </style></head><body>
 <h1>JEYVAN<br>PREMIUM WIFI</h1><div class="call">📞 PIGA: 0689211924</div>
-<h3>CHAGUA KIFURUSHI - YA KALENDA TU</h3>
+<h3>CHAGUA KIFURUSHI - DATA BILA KIKOMO</h3>
 <div class="grid">
-<div class="card c1"><div class="price">500 TSH</div><b>LEO</b><div class="small">• Data bila kikomo<br>• 10Mbps<br>• Inaisha leo usiku</div></div>
-<div class="card c2"><div class="price">1000 TSH</div><b>SIKU 1</b><div class="small">• Data bila kikomo<br>• 20Mbps<br>• Inaisha kesho usiku</div></div>
-<div class="card c3"><div class="price">5000 TSH</div><b>WIKI HII</b><div class="small">• Data bila kikomo<br>• 30Mbps<br>• Inaisha Jumapili</div></div>
-<div class="card c4"><span class="best">BEST SELLER</span><div class="price">15000 TSH</div><b>MWEZI HUU</b><div class="small">• Data bila kikomo<br>• 50Mbps<br>• Inaisha mwisho wa mwezi</div></div>
+<div class="card c1"><div class="price">500 TSH</div><b>SAA 7</b><div class="small">• Data bila kikomo<br>• 10Mbps<br>• Haraka sana</div></div>
+<div class="card c2"><div class="price">1000 TSH</div><b>SIKU 1</b><div class="small">• Data bila kikomo<br>• 20Mbps<br>• Siku nzima</div></div>
+<div class="card c3"><div class="price">5000 TSH</div><b>WIKI</b><div class="small">• Data bila kikomo<br>• 30Mbps<br>• Wiki nzima</div></div>
+<div class="card c4"><span class="best">BEST SELLER</span><div class="price">15000 TSH</div><b>MWEZI</b><div class="small">• Data bila kikomo<br>• 50Mbps<br>• Mwezi mzima</div></div>
 </div>
-<div class="warn">⚠️ <b>VOCHA NI YA KALENDA TU!</b><br>
-- <b>LEO</b> = Inaisha LEO usiku saa 11:59<br>
-- <b>SIKU 1</b> = Inaisha KESHO usiku<br>
-- <b>WIKI HII</b> = Inaisha JUMAPILI usiku<br>
-- <b>MWEZI HUU</b> = Inaisha MWISHO WA MWEZI<br>
-Ametumia au hajatumia, inakata muda huo huo!</div>
+<div class="warn">🔥 <b>DATA BILA KIKOMO!</b><br>
+- <b>SAA 7</b> = 500 TSH - Saa 7 kuanzia uliponunua<br>
+- <b>SIKU 1</b> = 1000 TSH - Saa 24 kuanzia uliponunua<br>
+- <b>WIKI</b> = 5000 TSH - Siku 7 kuanzia uliponunua<br>
+- <b>MWEZI</b> = 15000 TSH - Siku 30 kuanzia uliponunua</div>
 <div class="box"><h3 style="color:#FFD700">1. INGIA KWA CODE YA VOCHA</h3>
 <form method="POST" action="/ingia-vocha"><input name="code" placeholder="Weka CODE ya vocha hapa" required><br><button>INGIA KWA VOCHA →</button></form></div>
 <div class="box2"><h3 style="color:#2E86FF">2. LIPA SASA - PATA CODE MOJA KWA MOJA</h3>
-<form method="POST" action="/lipa"><select name="bei" required><option value="500">500 TSH - LEO (Inaisha leo usiku)</option><option value="1000">1000 TSH - SIKU 1 (Inaisha kesho usiku)</option><option value="5000">5000 TSH - WIKI HII (Inaisha Jumapili)</option><option value="15000">15000 TSH - MWEZI HUU (Inaisha mwisho wa mwezi)</option></select><input name="simu" placeholder="Weka namba 07XX XXX XXX" required><br><button class="btn-blue">LIPA SASA NA ZENOPAY →</button></form></div>
+<form method="POST" action="/lipa"><select name="bei" required><option value="500">500 TSH - SAA 7 - Data bila kikomo</option><option value="1000">1000 TSH - SIKU 1 - Data bila kikomo</option><option value="5000">5000 TSH - WIKI - Data bila kikomo</option><option value="15000">15000 TSH - MWEZI - Data bila kikomo</option></select><input name="simu" placeholder="Weka namba 07XX XXX XXX" required><br><button class="btn-blue">LIPA SASA NA ZENOPAY →</button></form></div>
 <div class="pay">AIRTEL LIPA NAMBA<br><b>13984763</b><br>Jina: JEYVAN STUDIO</div>
 {% if msg %}<div class="success">{{msg}}</div>{% endif %}
 {% if pending %}<div class="pending">⏳ {{pending}}<br><br><form method="POST" action="/angalia"><input type="hidden" name="order_id" value="{{order_id}}"><button class="btn-blue">NIMEMALIZA KULIPIA - ANGALIA CODE YANGU →</button></form></div>{% endif %}
@@ -114,7 +109,7 @@ def lipa():
     simu = request.form.get("simu","").strip().replace(" ","")
     if simu.startswith("0"):
         simu = "255" + simu[1:]
-    kifurushi = BEI.get(bei, "LEO")
+    kifurushi = BEI.get(bei, "MASAA7")
     order_id = str(uuid.uuid4())
     code_mpya = tengeneza_code()
     mwisho = tarehe_mwisho(kifurushi)
@@ -129,7 +124,8 @@ def lipa():
     except Exception as e:
         print(e)
         return render_template_string(HTML, msg="⚠️ Imeshindwa kuungana na ZenoPay. Jaribu tena.", pending="", order_id="", code_mpya="", mwisho_txt="")
-    pending = f"Angalia simu yako {simu} - umetumiwa USSD ya kulipia {bei} TSH ({kifurushi} - Inaisha {mwisho.strftime('%d/%m/%Y')}). Weka PIN yako."
+    jina_nje = {"MASAA7": "SAA 7", "SIKU 1": "SIKU 1", "WIKI HII": "WIKI", "MWEZI HUU": "MWEZI"}.get(kifurushi, kifurushi)
+    pending = f"Angalia simu yako {simu} - umetumiwa USSD ya kulipia {bei} TSH ({jina_nje} - Data bila kikomo). Weka PIN yako."
     return render_template_string(HTML, msg="", pending=pending, order_id=order_id, code_mpya="", mwisho_txt="")
 
 @app.route("/angalia", methods=["POST"])
@@ -145,7 +141,8 @@ def angalia():
         if "completed" in status or "paid" in status or "success" in status:
             code_mpya = info["code"]
             VOCHA[code_mpya] = {"kifurushi": info["kifurushi"], "mwisho": info["mwisho"]}
-            mwisho_txt = f"Vocha yako ni ya {info['kifurushi']} - Inaisha: {info['mwisho'].strftime('%d/%m/%Y saa 11:59 usiku')} - Ametumia au hajatumia inakata!"
+            jina_nje = {"MASAA7": "SAA 7", "SIKU 1": "SIKU 1", "WIKI HII": "WIKI", "MWEZI HUU": "MWEZI"}.get(info["kifurushi"], info["kifurushi"])
+            mwisho_txt = f"Vocha yako ni ya {jina_nje} - Data bila kikomo!"
             return render_template_string(HTML, msg="✅ Malipo yamethibitishwa!", pending="", order_id="", code_mpya=code_mpya, mwisho_txt=mwisho_txt)
         else:
             pending = "Bado hujalipia. Maliza kulipia kwenye simu yako, halafu bonyeza tena hapa."
