@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jeyvan WiFi</title>
+<style>
+body{font-family:Arial;text-align:center;background:#0f172a;color:white;padding:20px}
+.box{background:white;color:black;border-radius:15px;padding:20px;margin-top:20px}
+button{background:#22c55e;color:white;border:none;padding:15px 25px;border-radius:10px;font-size:18px;width:100%;margin:10px 0}
+img{width:200px;margin-top:10px}
+</style>
+</head>
+<body>
+<h1>JEYVAN WIFI</h1>
+<p>Internet ya Kasi</p>
+<div class="box">
+<h2>Chagua Kifurushi</h2>
+<button>Masaa 7 - Tsh 500</button>
+<button>Siku 1 - Tsh 1000</button>
+<button>Wiki 1 - Tsh 5000</button>
+<button>Mwezi 1 - Tsh 15000</button>
+<p><b>Lipa kwa ZenoPay</b><br>M-Pesa / Tigo Pesa / Airtel Money</p>
+<button style="background:#2563eb">LIPA SASA NA ZENOPAY</button>
+<h3>Scan Hapa Kuingia</h3>
+<img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https://jeyantony111-hash.github.io/jeyvan-studio-wifi/">
+</div>
+</body>
+</html>
